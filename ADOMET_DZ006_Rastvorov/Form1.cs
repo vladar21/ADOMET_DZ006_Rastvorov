@@ -18,6 +18,7 @@ namespace ADOMET_DZ006_Rastvorov
         DataTable dtAuthors;
         DataTable dtPublishers;
         Form addForm;
+     
         public string TabControlPageName { set; get; }
 
         public Form1()
@@ -30,7 +31,7 @@ namespace ADOMET_DZ006_Rastvorov
         {   
             using (LibraryEntities db = new LibraryEntities())
             {
-                // заполняем таблицу вкладки Authors
+                // заполняем таблицу вкладки Books
                 dtBooks = new DataTable();
                 dtBooks.Columns.Add("Id");
                 dtBooks.Columns.Add("Title");
@@ -51,6 +52,7 @@ namespace ADOMET_DZ006_Rastvorov
                     dr["IdPublisher"] = b.IdPublisher;
                     dtBooks.Rows.Add(dr);
                 }
+                
                 dataGridView1.DataSource = null;
                 dataGridView1.DataSource = dtBooks;
 
@@ -94,17 +96,15 @@ namespace ADOMET_DZ006_Rastvorov
         }
 
         private void dataGridView1_UserAddedRow(object sender, DataGridViewRowEventArgs e)
-        {         
-
+        {
             addForm = new Form();
-            
             addForm.Size = new Size(400, 550);
             Label addLabel = new Label();
             addLabel.Name = "NameAddLabel";
             addLabel.Location = new Point(22, 12);
             addLabel.AutoSize = true;
             addLabel.Font = new Font("Arial", 21, FontStyle.Bold);
-            
+
             switch ((sender as DataGridView).Parent.Name)
             {
                 case "BooksPage":
@@ -128,7 +128,7 @@ namespace ADOMET_DZ006_Rastvorov
             foreach (DataGridViewColumn column in addDGr.Columns)
             {
                 Label label = new Label();
-                TextBox textbox = new TextBox();                
+                TextBox textbox = new TextBox();
                 shag += 60;
                 label.Location = new Point(22, shag);
                 label.AutoSize = true;
@@ -139,6 +139,7 @@ namespace ADOMET_DZ006_Rastvorov
                 textbox.Size = new Size(300, 50);
                 textbox.Font = new Font("Arial", 16, FontStyle.Bold);
                 textbox.Name = column.HeaderText;
+                if (label.Text == "Id") textbox.Enabled = false;
                 addForm.Controls.Add(textbox);
             }
 
@@ -168,7 +169,7 @@ namespace ADOMET_DZ006_Rastvorov
                         if (tb.Name == "IdAuthor") book.IdAuthor = Convert.ToInt32(tb.Text);// Convert.ToInt32(tb.Name.ToString());
                         if (tb.Name == "Pages") book.Pages = Convert.ToInt32(tb.Text);
                         if (tb.Name == "Price") book.Price = Convert.ToInt32(tb.Text);
-                    }   
+                    }                    
                     AddBook(book);
                     addForm.Close();
                     LoadData();
@@ -212,14 +213,40 @@ namespace ADOMET_DZ006_Rastvorov
             }
         }
 
+        static void DelBook(int id)
+        {
+            using (LibraryEntities db = new LibraryEntities())
+            {
+                Book a = db.Book.Where((x) => x.Id == id).FirstOrDefault();
+                if (a != null)
+                {
+                    db.Book.Remove(a);                    
+                }
+                db.SaveChanges();
+            }
+        }
+
         static void AddAuthor(Author author)
         {
             using (LibraryEntities db = new LibraryEntities())
             {
-                Author au = db.Author.Where((x) => x.FirstName == author.FirstName).FirstOrDefault();
+                Author au = db.Author.Where((x) => (x.FirstName + x.LastName) == (author.FirstName + author.LastName)).FirstOrDefault();
                 if (au == null)
                 {
                     db.Author.Add(author);
+                }
+                db.SaveChanges();
+            }
+        }
+
+        static void DelAuthor(int id)
+        {
+            using (LibraryEntities db = new LibraryEntities())
+            {
+                Author a = db.Author.Where((x) => x.Id == id).FirstOrDefault();
+                if (a != null)
+                {
+                    db.Author.Remove(a);
                 }
                 db.SaveChanges();
             }
@@ -229,13 +256,163 @@ namespace ADOMET_DZ006_Rastvorov
         {
             using (LibraryEntities db = new LibraryEntities())
             {
-                Author p = db.Author.Where((x) => x.FirstName == publisher.PublisherName).FirstOrDefault();
+                Publisher p = db.Publisher.Where((x) => x.PublisherName == publisher.PublisherName).FirstOrDefault();
                 if (p == null)
                 {
                     db.Publisher.Add(publisher);
                 }
                 db.SaveChanges();
             }
+        }
+
+        static void DelPublisher(int id)
+        {
+            using (LibraryEntities db = new LibraryEntities())
+            {
+                Publisher a = db.Publisher.Where((x) => x.Id == id).FirstOrDefault();
+                if (a != null)
+                {
+                    db.Publisher.Remove(a);
+                }
+                db.SaveChanges();
+            }
+        }
+
+        private void dataGridView1_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
+        {
+            int id;
+            switch ((sender as DataGridView).Parent.Name)
+            {                
+                case "BooksPage":                   
+                    id = Convert.ToInt32(dataGridView1.SelectedCells[0].Value);
+                    DelBook(id);
+                    break;
+                case "AuthorsPage":
+                    id = Convert.ToInt32(dataGridView2.SelectedCells[0].Value);
+                    DelAuthor(id);
+                    break;
+                case "PublishersPage":
+                    id = Convert.ToInt32(dataGridView3.SelectedCells[0].Value);
+                    DelPublisher(id);
+                    break;
+            }
+            LoadData();
+        }
+
+        private void dataGridView1_CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
+        {
+            addForm = new Form();
+            addForm.Size = new Size(400, 550);
+            Label addLabel = new Label();
+            addLabel.Name = "NameAddLabel";
+            addLabel.Location = new Point(22, 12);
+            addLabel.AutoSize = true;
+            addLabel.Font = new Font("Arial", 21, FontStyle.Bold);
+
+            switch ((sender as DataGridView).Parent.Name)
+            {
+                case "BooksPage":
+                    addLabel.Text = "EDIT BOOK:";
+                    TabControlPageName = "BooksPage";
+                    break;
+                case "AuthorsPage":
+                    addLabel.Text = "EDIT AUTHOR:";
+                    TabControlPageName = "AuthorsPage";
+                    break;
+                case "PublishersPage":
+                    addLabel.Text = "EDIT PUBLISHER:";
+                    TabControlPageName = "PublishersPage";
+                    break;
+            }
+
+            DataTable addTable = new DataTable();
+            DataGridView addDGr = new DataGridView();
+            addDGr = sender as DataGridView;
+            int shag = 22;
+            foreach (DataGridViewColumn column in addDGr.Columns)
+            {
+                Label label = new Label();
+                TextBox textbox = new TextBox();
+                shag += 60;
+                label.Location = new Point(22, shag);
+                label.AutoSize = true;
+                label.Text = column.HeaderText;
+                label.Font = new Font("Arial", 18, FontStyle.Bold);
+                addForm.Controls.Add(label);
+                textbox.Location = new Point(22, shag + 30);
+                textbox.Size = new Size(300, 50);
+                textbox.Font = new Font("Arial", 16, FontStyle.Bold);
+                textbox.Name = column.HeaderText;
+                // присваем свойству Text значение ячейки из DataGridView
+                textbox.Text = addDGr.CurrentRow.Cells[column.HeaderText].Value.ToString();
+                if (label.Text == "Id") textbox.Enabled = false;
+                addForm.Controls.Add(textbox);
+            }
+
+            Button addButton = new Button();
+            addButton.Text = "Applay";
+            addButton.AutoSize = true;
+            addButton.Font = new Font("Arial", 14, FontStyle.Bold);
+            addButton.Location = new Point(22, 50);
+            addForm.Controls.Add(addButton);
+            addButton.Click += EditButton_Click;
+
+            //addForm.Controls.Add(addDGr);
+            addForm.Controls.Add(addLabel);
+            addForm.ShowDialog(this);
+        }
+
+        private void EditButton_Click(object sender, EventArgs e)
+        {
+            switch (TabControlPageName)
+            {
+                case "BooksPage":
+                    using (LibraryEntities db = new LibraryEntities())
+                    {
+                        List<TextBox> booklist = addForm.Controls.OfType<TextBox>().ToList();
+                        // ищем Id редактируем книжки среди контроллов формы для редактирования
+                        int id = Convert.ToInt32((booklist.Find(item => item.Name == "Id")).Text);
+                        Book a = db.Book.Where((x) => x.Id == id).FirstOrDefault();
+                        if (a != null)
+                        {
+                            foreach (var t in addForm.Controls.OfType<TextBox>()) //addForm.Controls.OfType<TextBox>())
+                            {
+                                if (t.Name == "Title") a.Title = t.Text;
+                                if (t.Name == "IdPublisher") a.IdPublisher = Convert.ToInt32(t.Text);
+                                if (t.Name == "IdAuthor") a.IdAuthor = Convert.ToInt32(t.Text);// Convert.ToInt32(tb.Name.ToString());
+                                if (t.Name == "Pages") a.Pages = Convert.ToInt32(t.Text);
+                                if (t.Name == "Price") a.Price = Convert.ToInt32(t.Text);
+                            }
+                        }
+                        db.SaveChanges();
+                    }
+                    addForm.Close();
+                    LoadData();
+                    break;
+                case "AuthorsPage":
+                    Author author = new Author();
+                    foreach (var a in addForm.Controls.OfType<TextBox>())
+                    {
+                        if (a.Name == "FirstName") author.FirstName = a.Text;
+                        if (a.Name == "LastName") author.LastName = a.Text;
+                    }
+                    AddAuthor(author);
+                    addForm.Close();
+                    LoadData();
+                    break;
+                case "PublishersPage":
+                    Publisher publisher = new Publisher();
+                    foreach (var p in addForm.Controls.OfType<TextBox>())
+                    {
+                        if (p.Name == "PublisherName") publisher.PublisherName = p.Text;
+                        if (p.Name == "Address") publisher.Address = p.Text;
+                    }
+                    AddPublisher(publisher);
+                    addForm.Close();
+                    LoadData();
+                    break;
+            }
+
         }
     }
 
