@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Data.Entity;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,12 @@ namespace ADOMET_DZ006_Rastvorov
 {
     public partial class Form1 : Form
     {
+        DataTable dtBooks;
+        DataTable dtAuthors;
+        DataTable dtPublishers;
+        Form addForm;
+        public string TabControlPageName { set; get; }
+
         public Form1()
         {
             InitializeComponent();
@@ -20,11 +27,11 @@ namespace ADOMET_DZ006_Rastvorov
         }
 
         public void LoadData()
-        {
+        {   
             using (LibraryEntities db = new LibraryEntities())
             {
                 // заполняем таблицу вкладки Authors
-                DataTable dtBooks = new DataTable();
+                dtBooks = new DataTable();
                 dtBooks.Columns.Add("Id");
                 dtBooks.Columns.Add("Title");
                 dtBooks.Columns.Add("IdAuthor");
@@ -48,7 +55,7 @@ namespace ADOMET_DZ006_Rastvorov
                 dataGridView1.DataSource = dtBooks;
 
                 // заполняем таблицу вкладки Authors
-                DataTable dtAuthors = new DataTable();
+                dtAuthors = new DataTable();
                 dtAuthors.Columns.Add("Id");
                 dtAuthors.Columns.Add("FirstName");
                 dtAuthors.Columns.Add("LastName");
@@ -66,7 +73,7 @@ namespace ADOMET_DZ006_Rastvorov
                 dataGridView2.DataSource = dtAuthors;
 
                 // заполняем таблицу вкладки Publisher
-                DataTable dtPublishers = new DataTable();
+                dtPublishers = new DataTable();
                 dtPublishers.Columns.Add("Id");
                 dtPublishers.Columns.Add("PublisherName");
                 dtPublishers.Columns.Add("Address");
@@ -89,23 +96,28 @@ namespace ADOMET_DZ006_Rastvorov
         private void dataGridView1_UserAddedRow(object sender, DataGridViewRowEventArgs e)
         {         
 
-            Form addForm = new Form();
+            addForm = new Form();
+            
             addForm.Size = new Size(400, 550);
             Label addLabel = new Label();
-            addLabel.Name = "Title";
+            addLabel.Name = "NameAddLabel";
             addLabel.Location = new Point(22, 12);
             addLabel.AutoSize = true;
             addLabel.Font = new Font("Arial", 21, FontStyle.Bold);
+            
             switch ((sender as DataGridView).Parent.Name)
             {
                 case "BooksPage":
-                    addLabel.Text = "ADD NEW BOOK:";                    
+                    addLabel.Text = "ADD NEW BOOK:";
+                    TabControlPageName = "BooksPage";
                     break;
                 case "AuthorsPage":
                     addLabel.Text = "ADD NEW AUTHOR:";
+                    TabControlPageName = "AuthorsPage";
                     break;
                 case "PublishersPage":
                     addLabel.Text = "ADD NEW PUBLISHER:";
+                    TabControlPageName = "PublishersPage";
                     break;
             }
 
@@ -140,13 +152,91 @@ namespace ADOMET_DZ006_Rastvorov
 
             //addForm.Controls.Add(addDGr);
             addForm.Controls.Add(addLabel);            
-            addForm.Show();
+            addForm.Show(this);
         }
 
         private void AddButton_Click(object sender, EventArgs e)
         {
-            //MessageBox.Show();
+            switch (TabControlPageName)
+            {
+                case "BooksPage":
+                    Book book = new Book();
+                    foreach (var tb in addForm.Controls.OfType<TextBox>())
+                    {
+                        if (tb.Name == "Title") book.Title = tb.Text;
+                        if (tb.Name == "IdPublisher") book.IdPublisher = Convert.ToInt32(tb.Text);
+                        if (tb.Name == "IdAuthor") book.IdAuthor = Convert.ToInt32(tb.Text);// Convert.ToInt32(tb.Name.ToString());
+                        if (tb.Name == "Pages") book.Pages = Convert.ToInt32(tb.Text);
+                        if (tb.Name == "Price") book.Price = Convert.ToInt32(tb.Text);
+                    }   
+                    AddBook(book);
+                    addForm.Close();
+                    LoadData();
+                    break;
+                case "AuthorsPage":
+                    Author author = new Author();
+                    foreach (var a in addForm.Controls.OfType<TextBox>())
+                    {
+                        if (a.Name == "FirstName") author.FirstName = a.Text;
+                        if (a.Name == "LastName") author.LastName = a.Text;                        
+                    }
+                    AddAuthor(author);
+                    addForm.Close();
+                    LoadData();
+                    break;
+                case "PublishersPage":
+                    Publisher publisher = new Publisher();
+                    foreach (var p in addForm.Controls.OfType<TextBox>())
+                    {
+                        if (p.Name == "PublisherName") publisher.PublisherName = p.Text;
+                        if (p.Name == "Address") publisher.Address = p.Text;
+                    }
+                    AddPublisher(publisher);
+                    addForm.Close();
+                    LoadData();
+                    break;
+            }
             
         }
+
+        static void AddBook(Book book)
+        {
+            using (LibraryEntities db = new LibraryEntities())
+            {
+                Book a = db.Book.Where((x) => x.Title == book.Title).FirstOrDefault();
+                if (a == null)
+                {
+                    db.Book.Add(book);
+                }
+                db.SaveChanges();                
+            }
+        }
+
+        static void AddAuthor(Author author)
+        {
+            using (LibraryEntities db = new LibraryEntities())
+            {
+                Author au = db.Author.Where((x) => x.FirstName == author.FirstName).FirstOrDefault();
+                if (au == null)
+                {
+                    db.Author.Add(author);
+                }
+                db.SaveChanges();
+            }
+        }
+
+        static void AddPublisher(Publisher publisher)
+        {
+            using (LibraryEntities db = new LibraryEntities())
+            {
+                Author p = db.Author.Where((x) => x.FirstName == publisher.PublisherName).FirstOrDefault();
+                if (p == null)
+                {
+                    db.Publisher.Add(publisher);
+                }
+                db.SaveChanges();
+            }
+        }
     }
+
 }
