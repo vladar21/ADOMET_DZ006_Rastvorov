@@ -1,24 +1,26 @@
-﻿using System;
+﻿// Создайте Windows Forms приложение для работы с БД с использованием Entity Framework 
+// по технологии Database First. В главном окне приложения должен содержаться элемент 
+// TabControl с тремя вкладками: Books, Authors и Publishers. Каждая вкладка должна 
+// обслуживать одну из таблиц нашей БД и выполнять добавление, удаление и редактирование 
+// записей в своей таблице.
+// Для добавления, редактирования и удаления записей использовать формы.
+
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Data.Entity;
 using System.Drawing;
-using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ADOMET_DZ006_Rastvorov
 {
     public partial class Form1 : Form
     {
-        DataTable dtBooks;
-        DataTable dtAuthors;
-        DataTable dtPublishers;
-        Form addForm;
-     
+        DataTable dtBooks; // рабочая таблица для хранения данных из таблицы базы Book 
+        DataTable dtAuthors; // рабочая таблица для хранения данных из таблицы базы Authors 
+        DataTable dtPublishers; // рабочая таблица для хранения данных из таблицы базы Publisher 
+        Form addForm; // форма для добавления и редактирования записей
+
         public string TabControlPageName { set; get; }
 
         public Form1()
@@ -26,12 +28,13 @@ namespace ADOMET_DZ006_Rastvorov
             InitializeComponent();
             LoadData();
         }
-
+        // загрузка данных из базы
         public void LoadData()
-        {   
+        {
             using (LibraryEntities db = new LibraryEntities())
             {
                 // заполняем таблицу вкладки Books
+                // формируем колонки
                 dtBooks = new DataTable();
                 dtBooks.Columns.Add("Id");
                 dtBooks.Columns.Add("Title");
@@ -39,7 +42,7 @@ namespace ADOMET_DZ006_Rastvorov
                 dtBooks.Columns.Add("Pages");
                 dtBooks.Columns.Add("Price");
                 dtBooks.Columns.Add("IdPublisher");
-
+                // загружаем данные из базы
                 var bks = db.Book.ToList();
                 foreach (var b in bks)
                 {
@@ -52,8 +55,9 @@ namespace ADOMET_DZ006_Rastvorov
                     dr["IdPublisher"] = b.IdPublisher;
                     dtBooks.Rows.Add(dr);
                 }
-                
+                // чистим датагрид
                 dataGridView1.DataSource = null;
+                // закидываем рабочую таблицу на датагрид
                 dataGridView1.DataSource = dtBooks;
 
                 // заполняем таблицу вкладки Authors
@@ -94,9 +98,11 @@ namespace ADOMET_DZ006_Rastvorov
             }
 
         }
-
+        // при попытке пользователя ввести данные в новой строке датагрида, запускаем форму 
+        // добавления данных в базу
         private void dataGridView1_UserAddedRow(object sender, DataGridViewRowEventArgs e)
         {
+            // создаем форму
             addForm = new Form();
             addForm.Size = new Size(400, 550);
             Label addLabel = new Label();
@@ -104,7 +110,7 @@ namespace ADOMET_DZ006_Rastvorov
             addLabel.Location = new Point(22, 12);
             addLabel.AutoSize = true;
             addLabel.Font = new Font("Arial", 21, FontStyle.Bold);
-
+            // проверяем на какой вкладке пользователь и формируем заголовок формы
             switch ((sender as DataGridView).Parent.Name)
             {
                 case "BooksPage":
@@ -120,7 +126,7 @@ namespace ADOMET_DZ006_Rastvorov
                     TabControlPageName = "PublishersPage";
                     break;
             }
-
+            // закидываем на форму в автоматическом режиме список полей текущей вкладки
             DataTable addTable = new DataTable();
             DataGridView addDGr = new DataGridView();
             addDGr = sender as DataGridView;
@@ -142,20 +148,19 @@ namespace ADOMET_DZ006_Rastvorov
                 if (label.Text == "Id") textbox.Enabled = false;
                 addForm.Controls.Add(textbox);
             }
-
+            // создаем кнопку Добавить
             Button addButton = new Button();
             addButton.Text = "Add";
             addButton.AutoSize = true;
             addButton.Font = new Font("Arial", 14, FontStyle.Bold);
-            addButton.Location = new Point(22, 50);            
+            addButton.Location = new Point(22, 50);
             addForm.Controls.Add(addButton);
             addButton.Click += AddButton_Click;
-
-            //addForm.Controls.Add(addDGr);
-            addForm.Controls.Add(addLabel);            
-            addForm.Show(this);
+            addForm.Controls.Add(addLabel);
+            // запускаем форму
+            addForm.ShowDialog(this);
         }
-
+        // обработка события добавления новой строки данных в базу
         private void AddButton_Click(object sender, EventArgs e)
         {
             switch (TabControlPageName)
@@ -169,7 +174,7 @@ namespace ADOMET_DZ006_Rastvorov
                         if (tb.Name == "IdAuthor") book.IdAuthor = Convert.ToInt32(tb.Text);// Convert.ToInt32(tb.Name.ToString());
                         if (tb.Name == "Pages") book.Pages = Convert.ToInt32(tb.Text);
                         if (tb.Name == "Price") book.Price = Convert.ToInt32(tb.Text);
-                    }                    
+                    }
                     AddBook(book);
                     addForm.Close();
                     LoadData();
@@ -179,7 +184,7 @@ namespace ADOMET_DZ006_Rastvorov
                     foreach (var a in addForm.Controls.OfType<TextBox>())
                     {
                         if (a.Name == "FirstName") author.FirstName = a.Text;
-                        if (a.Name == "LastName") author.LastName = a.Text;                        
+                        if (a.Name == "LastName") author.LastName = a.Text;
                     }
                     AddAuthor(author);
                     addForm.Close();
@@ -197,9 +202,9 @@ namespace ADOMET_DZ006_Rastvorov
                     LoadData();
                     break;
             }
-            
-        }
 
+        }
+        // функция добавления в новой строки в таблицу Book базы данных
         static void AddBook(Book book)
         {
             using (LibraryEntities db = new LibraryEntities())
@@ -209,10 +214,10 @@ namespace ADOMET_DZ006_Rastvorov
                 {
                     db.Book.Add(book);
                 }
-                db.SaveChanges();                
+                db.SaveChanges();
             }
         }
-
+        // функция удаления строки из таблицу Book базы данных
         static void DelBook(int id)
         {
             using (LibraryEntities db = new LibraryEntities())
@@ -220,12 +225,12 @@ namespace ADOMET_DZ006_Rastvorov
                 Book a = db.Book.Where((x) => x.Id == id).FirstOrDefault();
                 if (a != null)
                 {
-                    db.Book.Remove(a);                    
+                    db.Book.Remove(a);
                 }
                 db.SaveChanges();
             }
         }
-
+        // функция добавления в новой строки в таблицу Author базы данных
         static void AddAuthor(Author author)
         {
             using (LibraryEntities db = new LibraryEntities())
@@ -238,7 +243,7 @@ namespace ADOMET_DZ006_Rastvorov
                 db.SaveChanges();
             }
         }
-
+        // функция удаления строки из таблицу Book базы данных
         static void DelAuthor(int id)
         {
             using (LibraryEntities db = new LibraryEntities())
@@ -251,7 +256,7 @@ namespace ADOMET_DZ006_Rastvorov
                 db.SaveChanges();
             }
         }
-
+        // функция добавленя в новой строки в таблицу Publisher базы данных
         static void AddPublisher(Publisher publisher)
         {
             using (LibraryEntities db = new LibraryEntities())
@@ -264,7 +269,7 @@ namespace ADOMET_DZ006_Rastvorov
                 db.SaveChanges();
             }
         }
-
+        // функция удаления строки из таблицу Publisher базы данных
         static void DelPublisher(int id)
         {
             using (LibraryEntities db = new LibraryEntities())
@@ -277,13 +282,13 @@ namespace ADOMET_DZ006_Rastvorov
                 db.SaveChanges();
             }
         }
-
+        // обработка события выделения ползователем в датагриде сроки и нажатии клавиши Del
         private void dataGridView1_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
         {
             int id;
             switch ((sender as DataGridView).Parent.Name)
-            {                
-                case "BooksPage":                   
+            {
+                case "BooksPage":
                     id = Convert.ToInt32(dataGridView1.SelectedCells[0].Value);
                     DelBook(id);
                     break;
@@ -298,9 +303,10 @@ namespace ADOMET_DZ006_Rastvorov
             }
             LoadData();
         }
-
+        // отработка события выделения польователем ячейки с данными для их редактирования
         private void dataGridView1_CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
         {
+            // создаем форму для редактирования
             addForm = new Form();
             addForm.Size = new Size(400, 550);
             Label addLabel = new Label();
@@ -312,19 +318,25 @@ namespace ADOMET_DZ006_Rastvorov
             switch ((sender as DataGridView).Parent.Name)
             {
                 case "BooksPage":
+                    // Проверяем то, что это не новая строка
+                    if (e.RowIndex == dataGridView1.NewRowIndex) return;
                     addLabel.Text = "EDIT BOOK:";
                     TabControlPageName = "BooksPage";
                     break;
                 case "AuthorsPage":
+                    // Проверяем то, что это не новая строка
+                    if (e.RowIndex == dataGridView2.NewRowIndex) return;
                     addLabel.Text = "EDIT AUTHOR:";
                     TabControlPageName = "AuthorsPage";
                     break;
                 case "PublishersPage":
+                    // Проверяем то, что это не новая строка
+                    if (e.RowIndex == dataGridView3.NewRowIndex) return;
                     addLabel.Text = "EDIT PUBLISHER:";
                     TabControlPageName = "PublishersPage";
                     break;
             }
-
+            // заполняем созданную форму текстбоксами с названиями и значением редактирумой строки
             DataTable addTable = new DataTable();
             DataGridView addDGr = new DataGridView();
             addDGr = sender as DataGridView;
@@ -348,7 +360,7 @@ namespace ADOMET_DZ006_Rastvorov
                 if (label.Text == "Id") textbox.Enabled = false;
                 addForm.Controls.Add(textbox);
             }
-
+            // создаем кнопку подтверджающую ввод отредактированной информации
             Button addButton = new Button();
             addButton.Text = "Applay";
             addButton.AutoSize = true;
@@ -357,11 +369,11 @@ namespace ADOMET_DZ006_Rastvorov
             addForm.Controls.Add(addButton);
             addButton.Click += EditButton_Click;
 
-            //addForm.Controls.Add(addDGr);
             addForm.Controls.Add(addLabel);
+            // запускаем форму
             addForm.ShowDialog(this);
         }
-
+        // обработка события подтверждения ввода отредактированной информации
         private void EditButton_Click(object sender, EventArgs e)
         {
             switch (TabControlPageName)
@@ -375,7 +387,7 @@ namespace ADOMET_DZ006_Rastvorov
                         Book a = db.Book.Where((x) => x.Id == id).FirstOrDefault();
                         if (a != null)
                         {
-                            foreach (var t in addForm.Controls.OfType<TextBox>()) //addForm.Controls.OfType<TextBox>())
+                            foreach (var t in addForm.Controls.OfType<TextBox>())
                             {
                                 if (t.Name == "Title") a.Title = t.Text;
                                 if (t.Name == "IdPublisher") a.IdPublisher = Convert.ToInt32(t.Text);
@@ -412,8 +424,6 @@ namespace ADOMET_DZ006_Rastvorov
                     LoadData();
                     break;
             }
-
         }
     }
-
 }
